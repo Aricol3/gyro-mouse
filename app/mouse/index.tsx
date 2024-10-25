@@ -3,7 +3,6 @@ import { StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native
 import { Gyroscope } from 'expo-sensors';
 import { Subscription } from 'expo-modules-core';
 import { useLocalSearchParams } from "expo-router";
-import { io } from 'socket.io-client';
 
 export default function Mouse() {
     const { serverUrl } = useLocalSearchParams();
@@ -21,7 +20,7 @@ export default function Mouse() {
     };
 
     const _slow = () => Gyroscope.setUpdateInterval(1000);
-    const _fast = () => Gyroscope.setUpdateInterval(16);
+    const _fast = () => Gyroscope.setUpdateInterval(1);
 
     const _subscribe = async () => {
         const response = await permission();
@@ -51,31 +50,39 @@ export default function Mouse() {
     };
 
     const sendGyroData = (gyroData) => {
-        if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.emit('gyroData', gyroData);
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            // Send gyro data as JSON
+            socketRef.current.send(JSON.stringify({ event: 'gyroData', data: gyroData }));
         }
     };
 
     useEffect(() => {
-        const newSocket = io(serverUrl);
+        // Create a new WebSocket connection
+        const newSocket = new WebSocket(serverUrl);
+
         socketRef.current = newSocket;
 
-        newSocket.on('connect', () => {
+        newSocket.onopen = () => {
             setGyroEnabled(true);
-            console.log('Socket connected:', newSocket.id);
-        });
+            console.log('WebSocket connected');
+        };
 
-        newSocket.on('disconnect', () => {
+        newSocket.onclose = () => {
             setGyroEnabled(false);
-            console.log('Socket disconnected');
-        });
+            console.log('WebSocket disconnected');
+        };
+
+        newSocket.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log('Message from server:', message);
+        };
 
         (async () => {
             await _subscribe();
         })();
 
         return () => {
-            newSocket.disconnect();
+            newSocket.close();
             _unsubscribe();
         };
     }, [serverUrl]);

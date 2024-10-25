@@ -24,6 +24,7 @@ def get_ip():
 @app.route('/qrcode')
 def generate_qr():
     ip_address = get_ip()
+    print(ip_address)
     port = 3000
     connection_info = f'ws://{ip_address}:{port}'
 

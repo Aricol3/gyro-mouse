@@ -10,6 +10,7 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+gyro-mouse-server/server/target
 
 # macOS
 .DS_Store
