@@ -42,6 +42,7 @@ async fn handle_connection(stream: TcpStream) {
                     let x = gyro_data["data"]["x"].as_f64().unwrap_or(0.0);
                     let y = gyro_data["data"]["y"].as_f64().unwrap_or(0.0);
                     let z = gyro_data["data"]["z"].as_f64().unwrap_or(0.0);
+                    println!("Mouse coordinates {x}:{z}");
 
                     move_mouse(x, z);
                 } else {
@@ -78,4 +79,3 @@ fn move_mouse(x: f64, z: f64) {
         mouse.move_to(new_x, new_y).expect("Unable to move mouse");
     }
 }
-
