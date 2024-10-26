@@ -19,8 +19,8 @@ export default function Mouse() {
         return response;
     };
 
-    const _slow = () => Gyroscope.setUpdateInterval(1000);
-    const _fast = () => Gyroscope.setUpdateInterval(1);
+    const _slow = () => Gyroscope.setUpdateInterval(50);
+    const _fast = () => Gyroscope.setUpdateInterval(10);
 
     const _subscribe = async () => {
         const response = await permission();
