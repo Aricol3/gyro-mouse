@@ -1,50 +1,15 @@
-# Welcome to your Expo app 👋
+# Remote Mouse Control
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This project enables remote mouse control using a mobile device. It consists of a **server written in Rust** and a client application built with **Expo, a React Native framework**. The mobile app captures gyroscope data and click events, which are then transmitted to the server via UDP. The server processes these events to control the mouse cursor on the computer.
 
-## Get started
+# Features
 
-1. Install dependencies
+- **Gyroscope-Based Mouse Movement**: Control the mouse cursor by tilting and moving your mobile device.
+- **Left and Right Click Support**: Use on-screen buttons in the mobile app to perform left and right clicks seamlessly.
+- **UDP Communication**: Real-time data transfer between the mobile app and the Rust server over UDP.
+- **QR Code Connection Setup**: Quickly connect the mobile app to the server by scanning a QR code, which displays the server's URL for easy configuration.
 
-   ```bash
-   npm install
-   ```
+## Screenshots
 
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+![client](./screenshots/client.jpg)
+![server](./screenshots/server.jpg)
