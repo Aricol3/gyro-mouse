@@ -11,6 +11,6 @@ This project enables remote mouse control using a mobile device. It consists of 
 
 ## Screenshots
 
-<img src="./screenshots/client.jpg" alt="client" width="400"/>
-<img src="./screenshots/server.jpg" alt="server" width="400"/>
+<img src="./screenshots/client.jpg" alt="client" height="600"/>
+<img src="./screenshots/server.jpg" alt="server" width="600"/>
 
