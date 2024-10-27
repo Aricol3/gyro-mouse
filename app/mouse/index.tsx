@@ -11,7 +11,6 @@ export default function Mouse() {
     const [{ x, y, z }, setData] = useState({ x: 0, y: 0, z: 0 });
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [permissionStatus, setPermissionStatus] = useState(null);
-    const [gyroEnabled, setGyroEnabled] = useState(false);
     const socketRef = useRef(null);
 
     const permission = async () => {
@@ -52,6 +51,18 @@ export default function Mouse() {
         }
     };
 
+    const sendClickEvent = (type) => {
+        const [ip_addr, port] = serverUrl.split(':');
+        if (socketRef.current) {
+            const message = Buffer.from(JSON.stringify({ event: type }));
+            socketRef.current.send(message, 0, message.length, Number(port), ip_addr, (err) => {
+                if (err) {
+                    console.error(`${type} send error:`, err);
+                }
+            });
+        }
+    };
+
     useEffect(() => {
         const udpSocket = dgram.createSocket('udp4');
 
@@ -63,7 +74,6 @@ export default function Mouse() {
         socketRef.current = udpSocket;
 
         udpSocket.bind(() => {
-            setGyroEnabled(true);
             console.log('UDP socket bound');
         });
 
@@ -84,9 +94,6 @@ export default function Mouse() {
             <Text style={styles.text}>y: {y.toFixed(2)}</Text>
             <Text style={styles.text}>z: {z.toFixed(2)}</Text>
             <Text style={styles.text}>
-                Gyro Status: {gyroEnabled ? 'Enabled' : 'Disabled'}
-            </Text>
-            <Text style={styles.text}>
                 Permission Status: {permissionStatus ? JSON.stringify(permissionStatus) : 'Loading...'}
             </Text>
             <View style={styles.buttonContainer}>
@@ -98,6 +105,14 @@ export default function Mouse() {
                 </TouchableOpacity>
                 <TouchableOpacity onPress={_fast} style={styles.button}>
                     <Text>Fast</Text>
+                </TouchableOpacity>
+            </View>
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity onPress={() => sendClickEvent('leftClick')} style={styles.button}>
+                    <Text>Left Click</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => sendClickEvent('rightClick')} style={styles.button}>
+                    <Text>Right Click</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -129,12 +144,5 @@ const styles = StyleSheet.create({
         borderLeftWidth: 1,
         borderRightWidth: 1,
         borderColor: '#ccc',
-    },
-    pointer: {
-        position: 'absolute',
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        backgroundColor: 'red',
-    },
+    }
 });
