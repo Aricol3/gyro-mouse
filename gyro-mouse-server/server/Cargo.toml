@@ -3,6 +3,9 @@ name = "server"
 version = "0.1.0"
 edition = "2021"
 
+[env]
+RUST_LOG = "info"
+
 [dependencies]
 actix-web = "4.0"
 actix-web-actors = "4.0"

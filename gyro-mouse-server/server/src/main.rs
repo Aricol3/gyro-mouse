@@ -1,92 +1,55 @@
-use tokio::net::{TcpListener, TcpStream};
-use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
-use futures::{StreamExt, SinkExt};
+use tokio::net::UdpSocket;
 use std::env;
 use std::net::SocketAddr;
-use log::{info, error};
+use log::{error, info};
 use mouse_rs::{types::keys::Keys, Mouse};
 use qr2term::print_qr;
 use tokio::time::Instant;
 use local_ip_address::local_ip;
-
+use serde_json::Value;
 
 #[tokio::main]
 async fn main() {
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
 
     let local_ip = local_ip().unwrap();
-    let port = "3000";
-    let url = format!("ws://{}:{}", local_ip, port);
+    let port = "49152";
+    let url = format!("{}:{}", local_ip, port);
     print_qr(&url).unwrap();
 
-    let addr = env::args().nth(1).unwrap_or_else(||  format!("{}:{}", local_ip, port).to_string());
+    let addr = env::args().nth(1).unwrap_or_else(|| format!("{}:{}", local_ip, port).to_string());
     let addr: SocketAddr = addr.parse().expect("Invalid address");
-    let listener = TcpListener::bind(&addr).await.expect("Failed to bind");
+    let socket = UdpSocket::bind(&addr).await.expect("Failed to bind");
 
     info!("Listening on: {}", addr);
-    println!("Listening on: {}", addr);
 
-    while let Ok((stream, _)) = listener.accept().await {
-        tokio::spawn(handle_connection(stream));
-    }
-}
+    let mut buf = [0u8; 1024];
+    loop {
+        let (len, src) = socket.recv_from(&mut buf).await.expect("Failed to receive data");
+        let msg = String::from_utf8_lossy(&buf[..len]);
+        info!("Received from {}: {}", src, msg);
 
-async fn handle_connection(stream: TcpStream) {
-    let ws_stream = match accept_async(stream).await {
-        Ok(ws) => ws,
-        Err(e) => {
-            error!("Error during the websocket handshake: {}", e);
-            return;
-        }
-    };
-
-    let (mut sender, mut receiver) = ws_stream.split();
-
-    let mut stopwatch_started = false;
-    let mut start_time: Option<Instant> = None;
-    let mut counter = 0;
-
-    while let Some(msg) = receiver.next().await {
-        match msg {
-            Ok(Message::Text(text)) => {
-                if text.starts_with("{\"event\":\"gyroData\"") {
-                    let gyro_data: serde_json::Value = serde_json::from_str(&text).unwrap();
-                    let x = gyro_data["data"]["x"].as_f64().unwrap_or(0.0);
-                    let y = gyro_data["data"]["y"].as_f64().unwrap_or(0.0);
-                    let z = gyro_data["data"]["z"].as_f64().unwrap_or(0.0);
-                    println!("Mouse coordinates {x}:{z}");
-
-                    counter+=1;
-                    println!("Counter: {counter}");
-
-                    if !stopwatch_started {
-                        stopwatch_started = true;
-                        start_time = Some(Instant::now());
-                    }
-
-                    if let Some(start) = start_time {
-                        let elapsed = start.elapsed();
-                        println!("Elapsed time: {:.2?}", elapsed);
-                    }
-
-                    move_mouse(x, z);
-                } else {
-                    println!("Received other message: {:?}", text);
-                }
-            }
-            Ok(Message::Close(_)) => break,
-            Ok(_) => (),
-            Err(e) => {
-                error!("Error processing message: {}", e);
-                break;
-            }
+        if msg.starts_with("{\"event\":\"gyroData\"") {
+            handle_gyro_data(&msg).await;
+        } else {
+            info!("Received other message: {:?}", msg);
         }
     }
 }
 
-fn move_mouse(x: f64, z: f64) {
+async fn handle_gyro_data(msg: &str) {
+    let gyro_data: Value = serde_json::from_str(msg).unwrap();
+    let x = gyro_data["data"]["x"].as_f64().unwrap_or(0.0);
+    let y = gyro_data["data"]["y"].as_f64().unwrap_or(0.0);
+    let z = gyro_data["data"]["z"].as_f64().unwrap_or(0.0);
+
+    move_mouse(x, z).await;
+}
+
+async fn move_mouse(x: f64, z: f64) {
     let sensitivity = 20.0;
-    let movement_threshold = 1.0;
+    let movement_threshold = 0.7;
 
     let mouse = Mouse::new();
 

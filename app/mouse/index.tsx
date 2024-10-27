@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native';
 import { Gyroscope } from 'expo-sensors';
 import { Subscription } from 'expo-modules-core';
+import dgram from 'react-native-udp';
 import { useLocalSearchParams } from "expo-router";
+import {Buffer} from "buffer";
 
 export default function Mouse() {
     const { serverUrl } = useLocalSearchParams();
@@ -10,7 +12,6 @@ export default function Mouse() {
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [permissionStatus, setPermissionStatus] = useState(null);
     const [gyroEnabled, setGyroEnabled] = useState(false);
-    const [pointerPosition, setPointerPosition] = useState({ top: 200, left: 200 });
     const socketRef = useRef(null);
 
     const permission = async () => {
@@ -28,7 +29,6 @@ export default function Mouse() {
             setSubscription(
                 Gyroscope.addListener(gyroscopeData => {
                     setData(gyroscopeData);
-                    updatePointerPosition(gyroscopeData);
                     sendGyroData(gyroscopeData);
                 })
             );
@@ -40,49 +40,39 @@ export default function Mouse() {
         setSubscription(null);
     };
 
-    const updatePointerPosition = ({ x, z }) => {
-        const sensitivity = 10;
-
-        setPointerPosition(prevPosition => ({
-            top: Math.max(prevPosition.top - x * sensitivity, 0),
-            left: Math.max(prevPosition.left - z * sensitivity, 0)
-        }));
-    };
-
     const sendGyroData = (gyroData) => {
-        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-            // Send gyro data as JSON
-            socketRef.current.send(JSON.stringify({ event: 'gyroData', data: gyroData }));
+        const [ip_addr, port] = serverUrl.split(':');
+        if (socketRef.current) {
+            const message = Buffer.from(JSON.stringify({ event: 'gyroData', data: gyroData }));
+            socketRef.current.send(message, 0, message.length, Number(port), ip_addr, (err) => {
+                if (err) {
+                    console.error('GyroData send error:', err);
+                }
+            });
         }
     };
 
     useEffect(() => {
-        // Create a new WebSocket connection
-        const newSocket = new WebSocket(serverUrl);
+        const udpSocket = dgram.createSocket('udp4');
 
-        socketRef.current = newSocket;
+        udpSocket.on('error', (err) => {
+            console.error('Socket error:', err);
+            udpSocket.close();
+        });
 
-        newSocket.onopen = () => {
+        socketRef.current = udpSocket;
+
+        udpSocket.bind(() => {
             setGyroEnabled(true);
-            console.log('WebSocket connected');
-        };
-
-        newSocket.onclose = () => {
-            setGyroEnabled(false);
-            console.log('WebSocket disconnected');
-        };
-
-        newSocket.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            console.log('Message from server:', message);
-        };
+            console.log('UDP socket bound');
+        });
 
         (async () => {
             await _subscribe();
         })();
 
         return () => {
-            newSocket.close();
+            udpSocket.close();
             _unsubscribe();
         };
     }, [serverUrl]);
@@ -110,8 +100,6 @@ export default function Mouse() {
                     <Text>Fast</Text>
                 </TouchableOpacity>
             </View>
-            {/* Pointer */}
-            <Animated.View style={[styles.pointer, { top: pointerPosition.top, left: pointerPosition.left }]} />
         </View>
     );
 }
