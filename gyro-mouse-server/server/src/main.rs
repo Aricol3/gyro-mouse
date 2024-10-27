@@ -32,6 +32,10 @@ async fn main() {
 
         if msg.starts_with("{\"event\":\"gyroData\"") {
             handle_gyro_data(&msg).await;
+        } else if msg.starts_with("{\"event\":\"leftClick\"") {
+            handle_click("left").await;
+        } else if msg.starts_with("{\"event\":\"rightClick\"") {
+            handle_click("right").await;
         } else {
             info!("Received other message: {:?}", msg);
         }
@@ -45,6 +49,30 @@ async fn handle_gyro_data(msg: &str) {
     let z = gyro_data["data"]["z"].as_f64().unwrap_or(0.0);
 
     move_mouse(x, z).await;
+}
+
+async fn handle_click(button: &str) {
+    let mouse = Mouse::new();
+
+    match button {
+        "left" => {
+            if let Err(err) = mouse.click(&Keys::LEFT) {
+                error!("Failed to perform left click: {}", err);
+            } else {
+                info!("Performed left click");
+            }
+        }
+        "right" => {
+            if let Err(err) = mouse.click(&Keys::RIGHT) {
+                error!("Failed to perform right click: {}", err);
+            } else {
+                info!("Performed right click");
+            }
+        }
+        _ => {
+            error!("Unknown button: {}", button);
+        }
+    }
 }
 
 async fn move_mouse(x: f64, z: f64) {
