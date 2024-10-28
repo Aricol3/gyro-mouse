@@ -1,17 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Animated } from 'react-native';
-import { Gyroscope } from 'expo-sensors';
-import { Subscription } from 'expo-modules-core';
+import React, {useState, useEffect, useRef} from 'react';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Gyroscope, GyroscopeMeasurement} from 'expo-sensors';
+import {Subscription} from 'expo-modules-core';
 import dgram from 'react-native-udp';
-import { useLocalSearchParams } from "expo-router";
+import {useLocalSearchParams} from "expo-router";
 import {Buffer} from "buffer";
+import {PermissionResponse} from "expo-camera";
+import UdpSocket from "react-native-udp/lib/types/UdpSocket";
 
 export default function Mouse() {
-    const { serverUrl } = useLocalSearchParams();
-    const [{ x, y, z }, setData] = useState({ x: 0, y: 0, z: 0 });
+    const {serverUrl} = useLocalSearchParams();
+    const [ip_addr, port] = (serverUrl as string).split(':');
+    const [{x, y, z}, setData] = useState({x: 0, y: 0, z: 0});
     const [subscription, setSubscription] = useState<Subscription | null>(null);
-    const [permissionStatus, setPermissionStatus] = useState(null);
-    const socketRef = useRef(null);
+    const [permissionStatus, setPermissionStatus] = useState<PermissionResponse | null>(null);
+    const socketRef = useRef<UdpSocket | null>(null);
 
     const permission = async () => {
         const response = await Gyroscope.getPermissionsAsync();
@@ -39,10 +42,9 @@ export default function Mouse() {
         setSubscription(null);
     };
 
-    const sendGyroData = (gyroData) => {
-        const [ip_addr, port] = serverUrl.split(':');
+    const sendGyroData = (gyroData: GyroscopeMeasurement) => {
         if (socketRef.current) {
-            const message = Buffer.from(JSON.stringify({ event: 'gyroData', data: gyroData }));
+            const message = Buffer.from(JSON.stringify({event: 'gyroData', data: gyroData}));
             socketRef.current.send(message, 0, message.length, Number(port), ip_addr, (err) => {
                 if (err) {
                     console.error('GyroData send error:', err);
@@ -51,10 +53,9 @@ export default function Mouse() {
         }
     };
 
-    const sendClickEvent = (type) => {
-        const [ip_addr, port] = serverUrl.split(':');
+    const sendClickEvent = (type: string) => {
         if (socketRef.current) {
-            const message = Buffer.from(JSON.stringify({ event: type }));
+            const message = Buffer.from(JSON.stringify({event: type}));
             socketRef.current.send(message, 0, message.length, Number(port), ip_addr, (err) => {
                 if (err) {
                     console.error(`${type} send error:`, err);
@@ -64,7 +65,7 @@ export default function Mouse() {
     };
 
     useEffect(() => {
-        const udpSocket = dgram.createSocket('udp4');
+        const udpSocket = dgram.createSocket({type: "udp4"});
 
         udpSocket.on('error', (err) => {
             console.error('Socket error:', err);
