@@ -108,11 +108,11 @@ export default function Mouse() {
                     <Text>Fast</Text>
                 </TouchableOpacity>
             </View>
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity onPress={() => sendClickEvent('leftClick')} style={styles.button}>
+            <View style={styles.mouseButtonContainer}>
+                <TouchableOpacity onPress={() => sendClickEvent('leftClick')} style={styles.mouseButton}>
                     <Text>Left Click</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => sendClickEvent('rightClick')} style={styles.button}>
+                <TouchableOpacity onPress={() => sendClickEvent('rightClick')} style={styles.mouseButton}>
                     <Text>Right Click</Text>
                 </TouchableOpacity>
             </View>
@@ -145,5 +145,26 @@ const styles = StyleSheet.create({
         borderLeftWidth: 1,
         borderRightWidth: 1,
         borderColor: '#ccc',
-    }
+    },
+    mouseButtonContainer: {
+        flexDirection: 'row',
+        marginTop: 120,
+        alignItems: 'stretch',
+    },
+    mouseButton: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#eee',
+        padding: 40,
+        margin: 10,
+        borderRadius: 10,
+        minWidth: 150,
+        minHeight: 50,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+    },
 });
